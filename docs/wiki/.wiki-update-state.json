@@ -1,0 +1,11 @@
+{
+  "schema_version": 2,
+  "project_id": "local-ai-services-releases",
+  "mount_id": "local-ai-services-releases",
+  "last_documented_source_commit": "7c48fba4547583610a75ac7c957e3d26efa256ba",
+  "recorded_at": "2026-09-17T12:57:11+02:00",
+  "full_audit": {
+    "source_commit": "7c48fba4547583610a75ac7c957e3d26efa256ba",
+    "verified_at": "2026-09-17T12:57:11+02:00"
+  }
+}

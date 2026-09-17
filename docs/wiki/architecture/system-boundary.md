@@ -1,58 +1,48 @@
 ---
-title: Public release channel and LAS v2 boundary
+title: Public release channel boundary
 slug: local-ai-services-releases-system-boundary
 created: 2026-09-13
-updated: 2026-09-13
+updated: 2026-09-17
 authors: [Codex]
-description: Responsibility and trust-boundary model for the binary-only release repository.
+description: Responsibility and data-boundary model for the binary-only release repository.
 tags: [local-ai-services, architecture, security, releases]
-aliases: [LAS v2 release boundary, binary-only channel]
+aliases: [LAS release boundary, binary-only channel]
 type: reference
 status: active
 ---
 
-# Public release channel and LAS v2 boundary
+# Public release channel boundary
 
 ```text
-private LAS v2 source (topolar/local-ai-services-v2)
-  workflow_dispatch build -> GitHub Actions artifact (temporary)
-  verified publisher    -> GitHub Release assets in this public repository
-                               -> end-user download and local hash check
-  private runtime/control plane remains outside this repository
+public release repository
+  README, SECURITY.md, Git tags, GitHub Release asset destination
+      -> end-user obtains a selected released asset and verifies its bytes
+
+private runtime and control-plane implementation
+  remains outside this repository
 ```
 
 ## Responsibilities
 
-| Component | Owner/source of truth | What is known from inspected files |
-|---|---|---|
-| Public release repository | `topolar/local-ai-services-v2-releases` | Git tags, user-facing README/security policy, GitHub Release attachment destination |
-| Build matrix and artifact assembly | related private `local-ai-services` source | `.github/workflows/build-edge-installers.yml`, manually dispatched and tied to a reviewed source SHA |
-| Manifest construction | related private source | `scripts/build_installer_manifest.py` writes version, source commit, names, SHA-256, and byte sizes |
-| Publication transaction | related private source | `scripts/publish_edge_installers.py` validates an Action run then creates/verifies a draft before publication |
-| Runtime, enrollment, updates, API, secrets | private LAS v2 runtime/control plane | deliberately absent from this repository |
+| Boundary | What this repository establishes |
+|---|---|
+| Public repository | User-facing README and security guidance, Git tags, and the destination for GitHub Release assets |
+| GitHub Release | The README identifies Releases as the official installer download location; remote release state requires a separate read-back |
+| Local staging | `.artifacts/` is ignored candidate storage, not Git-tracked release evidence |
+| Private implementation | Runtime, control plane, build process, and release publication implementation are intentionally absent |
 
-The project registry calls this repository a **companion release repository**
-of `local-ai-services`; that relation was verified with `projectctl project
-show` on 2026-09-13. It does not grant access to the private source or prove a
-running service.
+The project registry identifies this repository as a companion release
+repository for `local-ai-services`. That relationship does not authorize work
+in the related project or establish a running-service state.
 
-## Trust and data boundaries
+## Data boundary
 
-- Public: installer assets, their SHA-256 sidecars, an immutable manifest, and
-  release metadata. These may be downloaded but still require integrity and
-  version verification.
-- Private: runtime bundles, source, enrollment values, Cloudflare service
-  credentials, node/worker tokens, and logs/configuration containing them.
-  `SECURITY.md` prohibits putting them in public discussions or attachments.
-- Local staging: `.artifacts/` is ignored by Git. It is a transport/staging
-  convenience only; it is neither a signed provenance record nor a substitute
-  for a GitHub Release read-back.
+Public documentation may describe installer names and integrity verification.
+Sensitive enrollment, service-access, node/worker, runtime, configuration, and
+log material must not be committed, attached to public discussions, or copied
+into this Wiki. `SECURITY.md` is the repository policy for that boundary.
 
-## Consequences for agents
-
-An agent working here can improve public documentation and inspect release
-metadata, but must switch to the registered `local-ai-services` project before
-touching the builder or publisher. Do not copy private source/bundles to make
-this repository appear self-contained. If the requested task crosses this
-boundary, stop and obtain explicit scope for the other repository and any
-external release action.
+An agent can update this repository's documentation and inspect its tracked
+metadata. Requests to build, publish, modify releases, or alter the private
+runtime require explicitly approved scope and must be handled outside this
+repository.
