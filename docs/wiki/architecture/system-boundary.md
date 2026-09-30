@@ -1,48 +1,58 @@
 ---
-title: Public release channel boundary
+title: Hranice veřejného release kanálu
 slug: local-ai-services-releases-system-boundary
 created: 2026-09-13
-updated: 2026-09-17
-authors: [Codex]
-description: Responsibility and data-boundary model for the binary-only release repository.
+updated: 2026-09-30
+authors: [Codex, Claude]
+description: Co vlastní tento veřejný repozitář a co local-ai-services; tok od buildu k uživateli a datová hranice.
 tags: [local-ai-services, architecture, security, releases]
-aliases: [LAS release boundary, binary-only channel]
+aliases: [LAS release boundary, binary-only channel, hranice release repa]
 type: reference
 status: active
 ---
 
-# Public release channel boundary
+# Hranice veřejného release kanálu
+
+Tento repozitář je pasivní veřejný cíl publikace. Veškerá logika — build,
+ověření, publikace, serverová distribuce, registrace a update klientů — je
+v privátním `local-ai-services`.
+
+## Tok
 
 ```text
-public release repository
-  README, SECURITY.md, Git tags, GitHub Release asset destination
-      -> end-user obtains a selected released asset and verifies its bytes
-
-private runtime and control-plane implementation
-  remains outside this repository
+local-ai-services (privátní, vlastní stroje, bez GitHub Actions)
+  scripts/build_edge_installers.py  -> artifacts/installers-<v>/dist/ (9 souborů)
+  scripts/smoke_edge_installer.ps1  -> windows-smoke.json (vlastní Windows host)
+  scripts/publish_edge_installers.py --windows-smoke-report ...
+      |                                   \
+      | gh release create/upload/edit      \ ruční staging operátorem
+      v                                      v
+  GitHub Releases tohoto repa          EDGE_RELEASE_DIR/installers/<v>/ na serveru
+  (volitelný host, tag -> docs commit)  -> GET /v3/marketplace/installers/... (primární)
+      \___________________ uživatel stáhne, ověří SHA-256, spustí ________/
+                              instalátor se páruje kódem z Control Center
 ```
 
-## Responsibilities
+## Odpovědnosti
 
-| Boundary | What this repository establishes |
-|---|---|
-| Public repository | User-facing README and security guidance, Git tags, and the destination for GitHub Release assets |
-| GitHub Release | The README identifies Releases as the official installer download location; remote release state requires a separate read-back |
-| Local staging | `.artifacts/` is ignored candidate storage, not Git-tracked release evidence |
-| Private implementation | Runtime, control plane, build process, and release publication implementation are intentionally absent |
+| Část | Vlastník | Co tu platí |
+|---|---|---|
+| README, `SECURITY.md`, wiki, `services.json` | toto repo | README je zastaralé (platformy, instalační dialog) — viz [[local-ai-services-releases/local-ai-services-releases-official-installers]] |
+| Git tagy `v<version>` | vznikají publisherem LAS | ukazují na docs commit tohoto repa, ne na kód |
+| GitHub Release assety | `publish_edge_installers.py` v LAS | přesná sada 9 souborů, neměnné po publikaci |
+| `.artifacts/` | nikdo (ignorované, mimo tok) | viz [[local-ai-services-releases/local-ai-services-releases-publication-surface]] |
+| Build, runtime, server, párování, update | `local-ai-services` | [[local-ai-services/edge-fleet]], [[local-ai-services/edge-security]] |
 
-The project registry identifies this repository as a companion release
-repository for `local-ai-services`. That relationship does not authorize work
-in the related project or establish a running-service state.
+## Datová hranice
 
-## Data boundary
+Do repa, issues, release poznámek ani wiki nepatří: enrollment tokeny,
+Cloudflare Access client ID/secret, node/worker bearer tokeny, pairing kódy,
+privátní runtime archivy, konfigurace a logy s credentials (`SECURITY.md`).
+Release poznámky publisheru obsahují jen text „no credentials are included“ a
+marker `edge-publisher-id: <uuid>`. Klienti neobsahují GitHub PAT; runtime
+stahují přes autentizovaný broker serveru.
 
-Public documentation may describe installer names and integrity verification.
-Sensitive enrollment, service-access, node/worker, runtime, configuration, and
-log material must not be committed, attached to public discussions, or copied
-into this Wiki. `SECURITY.md` is the repository policy for that boundary.
+Agent smí v tomto repu měnit dokumentaci a číst metadata. Build, publikace,
+změny releasů a runtime jsou mimo toto repo a vyžadují výslovné schválení.
 
-An agent can update this repository's documentation and inspect its tracked
-metadata. Requests to build, publish, modify releases, or alter the private
-runtime require explicitly approved scope and must be handled outside this
-repository.
+Rodič: [[local-ai-services-releases/local-ai-services-releases-architecture]].

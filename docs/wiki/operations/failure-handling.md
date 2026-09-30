@@ -1,48 +1,46 @@
 ---
-title: Handle installer release verification failures
+title: Řešení chyb ověření a publikace instalátorů
 slug: local-ai-services-releases-failure-handling
 created: 2026-09-13
-updated: 2026-09-13
-authors: [Codex]
-description: Stop conditions and evidence-preserving response for bad artifacts, mismatched releases, and secret exposure.
+updated: 2026-09-30
+authors: [Codex, Claude]
+description: Stop podmínky a postup při nesouhlasném hashi, chybějícím assetu, selhané publikaci nebo úniku secretu.
 tags: [local-ai-services, releases, incident, security]
-aliases: [bad installer, checksum mismatch, release incident]
+aliases: [bad installer, checksum mismatch, release incident, chyba instalátoru]
 type: runbook
 status: active
 ---
 
-# Handle installer release verification failures
+# Řešení chyb ověření a publikace instalátorů
 
-## Immediate safe response
+## Okamžitá bezpečná reakce
 
-- **Checksum, size, manifest, or filename mismatch:** do not run the asset,
-  upload it, rename it, regenerate a sidecar, or retry publication. Record the
-  exact tag/URL, asset name, expected and observed digest/size, command exit
-  code, and time without copying secret-bearing output.
-- **Unexpected platform or README/workflow disagreement:** stop publication
-  and get a release-owner decision. Do not fabricate a missing platform asset
-  or edit public instructions to match a guess.
-- **Possible secret exposure:** do not open a public issue or attach logs.
-  Follow `SECURITY.md`: contact the repository owner privately. Treat
-  enrollment, Cloudflare Access, node/worker tokens, private runtime archives,
-  and credential-bearing configuration/logs as sensitive.
+| Situace | Co udělat | Co nedělat |
+|---|---|---|
+| `sha256sum -c` na sidecaru platformy selže, nesedí velikost | Zapsat tag/URL, název assetu, očekávaný a zjištěný digest, exit code; eskalovat vlastníkovi LAS | Spouštět, přejmenovat, generovat nový sidecar, znovu publikovat |
+| `sha256sum -c` selže jen na `installer-manifest.json.sha256` nebo řádku `dist/installer-manifest.json` v `checksums.txt` | Známé chování (cesta `dist/`), ne poškození — ověřit manifest ručně, viz [[local-ai-services-releases/local-ai-services-releases-public-release-contract]] | Hlásit jako kompromitovaný release |
+| Release má jinou sadu platforem (macOS, `.zip`) | U `v0.3.1` je to legacy stav; u 0.4.x eskalovat | Doplňovat chybějící asset ručně |
+| Uživatel se ptá na enrollment token / Cloudflare credentials podle README | Vysvětlit, že aktuální instalátor používá párovací kód z Control Center; README je zastaralé | Radit zadávat Cloudflare credentials |
+| Možný únik secretu | Soukromě kontaktovat vlastníka repa (`SECURITY.md`) | Zakládat veřejné issue, přikládat logy |
 
-## Triage (READ)
+## Selhaná publikace (publisher `local-ai-services`)
 
-1. Preserve the artifact filename and source/tag identity. If available,
-   inspect the associated manifest and sidecar alongside the exact bytes.
-2. Read back the remote release under authorized access and compare its asset
-   names, sizes, and digests to the local verified manifest. A tag alone is
-   insufficient evidence.
-3. Determine whether the failure is before publication, in an owned draft, or
-   in an already published release. The response authority differs.
-4. For workflow/publisher behavior, inspect the related LAS v2 source and its
-   tests; this release repository cannot repair the build or runtime.
+1. READ: `gh release view v<v> --repo topolar/local-ai-services-v2-releases --json isDraft,body,assets`.
+2. Neexistuje → publisher svůj draft smazal; lze opakovat až po odstranění příčiny.
+3. Draft s markerem `edge-publisher-id` z tohoto běhu → cleanup nestihl; smazat
+   jen se schválením vlastníka.
+4. Publikovaný (`isDraft: false`) → hotovo i přes chybu klienta; publisher tento
+   případ po chybě `gh release edit` sám bere jako úspěch. Ověřit assety (runbook A).
+5. Chyby ověření lokálního `dist/` (hlášky `installer manifest shape is invalid`,
+   `installer platform set is incomplete`, `aggregate checksums differ`,
+   `Windows smoke report does not match the installer`) → opravit build v LAS,
+   nic neobcházet.
 
-## Escalation and recovery
+Postup publikace: [[local-ai-services-releases/local-ai-services-releases-verified-publication]].
 
-Only the source publisher's narrowly checked owned-draft cleanup is documented
-in code. It is not a general deletion authority. Do not manually delete a
-release, overwrite an asset, revoke a credential, or publish a replacement
-without an owner-approved incident/release plan. Keep public claims limited to
-facts independently read back from the release service.
+## Eskalace
+
+Mazání či přepis publikovaného release, revokace credentials a náhradní release
+vyžadují plán schválený vlastníkem. Veřejná tvrzení jen na základě readbacku.
+
+Rodič: [[local-ai-services-releases/local-ai-services-releases-operations]].

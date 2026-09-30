@@ -1,23 +1,27 @@
 ---
-title: Local AI Services Releases — operations
+title: Local AI Services Releases — provoz
 slug: local-ai-services-releases-operations
 created: 2026-09-13
-updated: 2026-09-13
-authors: [Codex]
-description: Safe operational map for release preparation, verification, and incident stop conditions.
+updated: 2026-09-30
+authors: [Codex, Claude]
+description: Rozcestník provozních postupů — kontrola a publikace release, řešení chyb.
 tags: [local-ai-services, releases, operations, security]
-aliases: [release operations]
+aliases: [provoz release repa, release operations]
 type: overview
 status: active
 ---
 
-# Operations
+# Provoz
 
-| Situation | Read |
+Repozitář nemá běžící službu; provoz = kontrola a publikace GitHub Releases,
+které se spouští z `local-ai-services`.
+
+| Situace | Stránka |
 |---|---|
-| An approved owner asks to prepare or assess a release | [Verified publication](verified-publication.md) |
-| A checksum fails, an asset is wrong, or a secret may have leaked | [Failure handling](failure-handling.md) |
+| Zjistit obsah release nebo se schválením publikovat novou verzi | [[local-ai-services-releases/local-ai-services-releases-verified-publication]] |
+| Nesedí hash, chybí asset, selhala publikace, únik secretu | [[local-ai-services-releases/local-ai-services-releases-failure-handling]] |
 
-All mutation steps are deliberately separated from inspection. Documentation
-does not authorize GitHub release changes, installer execution, or operations
-in the private LAS v2 control plane.
+Dokumentace nedává oprávnění ke změně releasů, spuštění instalátoru ani zásahu
+do `local-ai-services`.
+
+Rodič: [[local-ai-services-releases/local-ai-services-releases]].
